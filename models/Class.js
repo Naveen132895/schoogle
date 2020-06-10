@@ -1,27 +1,12 @@
 const mongoose = require('mongoose'), Schema = mongoose.Schema;
-const passportLocalMongoose = require('passport-local-mongoose');
-
-// var Class = mongoose.model('class',
-// {
-//     grade: { type : Number },
-//     section: {type : String },
-//     classTeacher: [{
-//       type : Schema.Types.ObjectId,
-//         ref: 'User'
-//   }]
-// });
-
+var { User } = require('./User')
 
 const ClassSchema = new Schema({
   grade: Number ,
-    section: String ,
-    class: {
-      type: Schema.Types.ObjectId,
-      ref: "class"
-    }
+  section: String ,
+  class: [{ type: Schema.Types.ObjectId, ref: "User" }]
 });
 
-ClassSchema.plugin(passportLocalMongoose);
-const Class = mongoose.model('Class', ClassSchema, 'classes');
+const Class = mongoose.model('Class', ClassSchema);
 
 module.exports = { Class };

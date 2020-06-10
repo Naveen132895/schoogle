@@ -1,24 +1,19 @@
 const express = require('express');
-var router = express.Router();
-const  bcrypt   = require('bcrypt-nodejs');
+const router = express.Router();
+const bcrypt = require('bcrypt');
+
 var { User } = require('../models/User');
- 
-//get all vlaues from DB
-router.get('/', (req, res) => {
-      var username = req.body.username;
-      var password = req.body.password;
-    User.findOne({username : username}, (err, doc) => {
-        if(!err){
-            if( bcrypt.compareSync(password,doc.password)){
-                res.send("LoginSuccess")
-            }else{
-                res.send("Login Failure")
-            }
-        }else{
-            console.log("Error in retrive User"+JSON.stringify(err,undefined,2));
+
+// Login Router
+router.route('/').post(function(req, res) {
+    User.findOne({ username: req.body.username })
+    .then(user => {
+        if (!user) res.sendStatus(204);
+        else {
+            bcrypt.compare(req.body.password, user.password)
+            .then(passwordMatch => passwordMatch ? res.send("Login Success") : res.send("Login Fail"))
         }
     });
-
-})
+});
  
 module.exports = router;

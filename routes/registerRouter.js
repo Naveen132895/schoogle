@@ -1,26 +1,20 @@
 const express = require('express');
-var router = express.Router();
-const  bcrypt   = require('bcrypt-nodejs');
+const router = express.Router();
+const bcrypt = require('bcrypt');
+
 var { User } = require('../models/User');
  
-//get all vlaues from DB
-router.post('/register',(req,res) => {
-    var usr = new User({
-        username : req.body.username,
-        password : bcrypt.hashSync(req.body.password, bcrypt.genSaltSync(8), null),
-        firstname : req.body.firstname,
-        lastname: req.body.lastname,
-        emailID : req.body.emailID,
-        phoneNumber : req.body.phoneNumber,
-        role : req.body.role
-    });
+// Register Router
+router.route('/').post(function(req, res) {
+    let user = new User(req.body);
+    user.password = bcrypt.hashSync(req.body.password, bcrypt.genSaltSync(8), null);
 
-    usr.save((err,doc) => {
-        if(!err){
-           res.send(doc);
-        }else{
-            console.log("Error in insert User data"+JSON.stringify(err,undefined,2));
-        }
+    user.save()
+    .then(reg => {
+        res.send(reg);
+    })
+    .catch(err => {
+        res.status(400).send("Failed to store to database");
     });
 });
  

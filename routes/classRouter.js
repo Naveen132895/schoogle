@@ -1,78 +1,67 @@
 const express = require('express');
-var router = express.Router();
-const mongoose = require('mongoose'), Schema = mongoose.Schema
+const router = express.Router();
+const  bcrypt   = require('bcrypt-nodejs');
 
-var { Class } = require('../models/Class');
-//get all vlaues from DB
-router.get('/', (req, res) => {
-    Class.find((err, doc) => {
-        if(!err){ 
-            res.send(doc);
-        }else{
-            console.log("Error in Retrive User"+JSON.stringify(err,undefined,2));
-        }
+const { Class } = require('../models/Class');
+const { User } = require('../models/User');
+
+
+// Register class Router
+router.route('/V/').post((req, res) => {
+    let clas = new Class(req.body);
+    clas.save()
+    .then(reg => { res.send(reg); })
+    .catch(err => { res.send("Failed to store to database"+err); });
+});
+ 
+// Get allClass detail without populate
+router.route('/V/').get((req, res) => {
+    Class.find((err, data) => err ? res.status(400).send("Error occured") : res.json(data));
+});
+
+// Get respective class detail without populate ie 12
+router.route('/V/:grade/').get((req, res) => {
+    Class.find({grade : req.params.grade},(err, data) => err ? res.status(400).send("Error occured") : res.json(data));
+});
+
+// Get specific class detail without populate ie 12 A
+router.route('/V/:grade/:section').get((req, res) => {
+    Class.findOne({grade : req.params.grade, section : req.params.section},(err, data) => err ? res.status(400).send("Error occured") : res.json(data));
+});
+
+//Delete Specific User detail
+router.route('/V/:grade').delete((req, res) => {
+    Class.findOneAndRemove({grade : req.params.grade}, (err, doc) => {
+        if (!err) res.send(doc); 
+        else  console.log(res.send(err)); 
+    });
+});
+
+//Mapping Teacher to specific clas
+router.route('/v1/:username/:grade/:section').post((req, res) => {
+    var clas, usr;
+    console.log(req.params.grade)
+    User.findOne({username : req.params.username },(err, data) => { usr = new User(data); });
+    Class.findOne({grade : req.params.grade, section : req.params.section },(err, data) => {
+        clas = new Class(data); 
+        clas.class.push(usr); 
+        clas.save().then(reg => { res.send(reg); }).catch(err => { res.status(400).send("Error mapping teacher"); });
+    });
+});
+
+// Get allclass detail with populated value
+router.route('/v1/').get((req, res) => {
+    Class.find().populate('class').exec((err,doc) => { res.send(doc); });
+});
+
+// Get specific class detail with populated value
+router.route('/v1/:grade').get((req, res) => {
+    Class.find({grade : req.params.grade}).populate('class').exec((err,doc) => {
+       if(!err) res.send(doc);
+       else res.send(err);
     });
 });
 
 
-router.get('/:username', (req, res) => {
-    Class.findOne({username : req.params.username}, (err, doc) => {
-        if(!err){
-            res.send(doc);
-        }else{
-            console.log("Error in retrive User"+JSON.stringify(err,undefined,2));
-        }
-    });
-
-})
-
-router.post('/',(req,res) => {
-
-    
-    var classes = new Class(req.body.class);
-    var cls = new Class({
-        grade : req.body.grade,
-        section : req.body.section,
-        class : classes
-    });
-
-    cls.save((err,doc) => {
-        if(!err){
-           res.send(doc);
-        }else{
-            console.log("Error in insert User data"+JSON.stringify(err,undefined,2));
-        }
-    });
-});
-
-router.put('/:username', (req, res) => {
-    if (!req.params.username){
-        console.log("Update user")
-        return res.status(400).send(`No record with given id : ${req.params.username}`)};
-
-        var cls = new Class({
-            grade : req.body.grade,
-            section : req.body.section,
-            classTeacher: {
-                type: Schema.Types.ObjectId,
-                ref: "User"
-            }
-        });
-    Class.findOneAndUpdate({username : req.params.username}, { $set: usr }, { new: true }, (err, doc) => {
-        if (!err) { res.send(doc); }
-        else { console.log('Error in User Update :' + JSON.stringify(err, undefined, 2)); }
-    });
-});
-
-
-router.delete('/:username', (req, res) => {
-    if (!req.params.username)
-        return res.status(400).send(`No record with given id : ${req.params.username}`);
-
-        Class.findOneAndRemove({username : req.params.username}, (err, doc) => {
-        if (!err) { res.send(doc); }
-        else { console.log('Error in User Delete :' + JSON.stringify(err, undefined, 2)); }
-    });
-});
-
+//Pending remove teacher and update teacher
 module.exports = router;
